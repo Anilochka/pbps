@@ -10,10 +10,13 @@
 #include <sys/mman.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <time.h>
+#include <syslog.h>
 
 #define MAX_CONNECTIONS 1000
 #define BUF_SIZE 65535
 #define QUEUE_SIZE 1000000
+#define SIZE 1024
 
 static int listenfd;
 int *clients;
@@ -27,9 +30,12 @@ char *method, // "GET" or "POST"
     *uri,     // "/index.html" things before '?'
     *qs,      // "a=1&b=2" things after  '?'
     *prot,    // "HTTP/1.1"
-    *payload; // for POST
+    *payload, // for POST
+    *message_log;
 
 int payload_size;
+FILE *logFile;
+struct sockaddr_in clientaddr;
 
 void serve_forever(const char *PORT) {
   struct sockaddr_in clientaddr;
@@ -37,8 +43,12 @@ void serve_forever(const char *PORT) {
 
   int slot = 0;
 
-  printf("Server started %shttp://127.0.0.1:%s%s\n", "\033[92m", PORT,
-         "\033[0m");
+  message_log = malloc(SIZE);
+
+  sprintf(message_log, "Server started %shttp://127.0.0.1:%s%s\n", "\033[92m", PORT,
+      "\033[0m");
+  syslog(LOG_INFO, "%s", message_log);
+  logFile = fopen("var/log/picofoxweb/log.txt", "w");
 
   // create shared memory for client slot array
   clients = mmap(NULL, sizeof(*clients) * MAX_CONNECTIONS,
@@ -76,6 +86,7 @@ void serve_forever(const char *PORT) {
     while (clients[slot] != -1)
       slot = (slot + 1) % MAX_CONNECTIONS;
   }
+  fclose(logFile);
 }
 
 // start server
@@ -178,7 +189,15 @@ void respond(int slot) {
 
     uri_unescape(uri);
 
-    fprintf(stderr, "\x1b[32m + [%s] %s\x1b[0m\n", method, uri);
+    time_t rawtime;
+    struct tm* timeinfo;
+    char dateTime[30];
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+    strftime(dateTime, 30, "%d/%b/%Y:%H:%M:%S %z", timeinfo);
+    char* clientIp = inet_ntoa(clientaddr.sin_addr);
+
+    sprintf(message_log, "%s :: [%s] \"%s %s %s\"", clientIp, dateTime, method, uri, prot);
 
     qs = strchr(uri, '?');
 
@@ -218,8 +237,12 @@ void respond(int slot) {
     dup2(clientfd, STDOUT_FILENO);
     close(clientfd);
 
+    sprintf(message_log, "%s %d %d [%s] \"%s %s %s\"", clientIp, clientfd, clientfd, date, method, uri, prot);
+
     // call router
     route();
+    sprintf(message_log, "%s %d", message_log, payload_size);
+    syslog(LOG_INFO, "%s", message_log);
 
     // tidy up
     fflush(stdout);
