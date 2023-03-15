@@ -237,7 +237,7 @@ void respond(int slot) {
     dup2(clientfd, STDOUT_FILENO);
     close(clientfd);
 
-    sprintf(message_log, "%s %d %d [%s] \"%s %s %s\"", clientIp, clientfd, clientfd, date, method, uri, prot);
+    sprintf(message_log, "%s %d %d [%s] \"%s %s %s\"", clientIp, clientfd, clientfd, dateTime, method, uri, prot);
 
     // call router
     route();
