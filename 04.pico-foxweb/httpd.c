@@ -242,7 +242,7 @@ void respond(int slot) {
     // call router
     route();
     sprintf(message_log, "%s %d", message_log, payload_size);
-    syslog(LOG_INFO, "%s", message_log);
+    fprintf(logFile, "%s \n", message_log);
 
     // tidy up
     fflush(stdout);
