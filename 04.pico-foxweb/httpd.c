@@ -197,7 +197,7 @@ void respond(int slot) {
     strftime(dateTime, 30, "%d/%b/%Y:%H:%M:%S %z", timeinfo);
     char* clientIp = inet_ntoa(clientaddr.sin_addr);
 
-    sprintf(message_log, "%s :: [%s] \"%s %s %s\"", clientIp, dateTime, method, uri, prot);
+    //sprintf(message_log, "%s :: [%s] \"%s %s %s\"", clientIp, dateTime, method, uri, prot);
 
     qs = strchr(uri, '?');
 
