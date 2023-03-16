@@ -86,6 +86,7 @@ void serve_forever(const char *PORT) {
     while (clients[slot] != -1)
       slot = (slot + 1) % MAX_CONNECTIONS;
   }
+  free(message_log);
   fclose(logFile);
 }
 
